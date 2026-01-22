@@ -16,14 +16,47 @@ import {
 
 const router = express.Router();
 
+/* ======================================================
+   AUTH (Frontend + Dashboard)
+====================================================== */
+
+// Patient register
 router.post("/patient/register", patientRegister);
+
+// Login (Patient / Admin / Doctor)
 router.post("/login", login);
-router.post("/admin/addnew", isAdminAuthenticated, addNewAdmin);
-router.post("/doctor/addnew", isAdminAuthenticated, addNewDoctor);
-router.get("/doctors", getAllDoctors);
-router.get("/patient/me", isPatientAuthenticated, getUserDetails);
+
+/* ======================================================
+   ADMIN ROUTES (Dashboard)
+====================================================== */
+
+// Add new admin
+router.post("/admin", isAdminAuthenticated, addNewAdmin);
+
+// Add new doctor
+router.post("/doctor", isAdminAuthenticated, addNewDoctor);
+
+// Get admin profile
 router.get("/admin/me", isAdminAuthenticated, getUserDetails);
-router.get("/patient/logout", isPatientAuthenticated, logoutPatient);
-router.get("/admin/logout", isAdminAuthenticated, logoutAdmin);
+
+// Admin logout
+router.post("/admin/logout", isAdminAuthenticated, logoutAdmin);
+
+/* ======================================================
+   PATIENT ROUTES (Frontend)
+====================================================== */
+
+// Get patient profile
+router.get("/patient/me", isPatientAuthenticated, getUserDetails);
+
+// Patient logout
+router.post("/patient/logout", isPatientAuthenticated, logoutPatient);
+
+/* ======================================================
+   SHARED ROUTES
+====================================================== */
+
+// Get all doctors (public)
+router.get("/doctors", getAllDoctors);
 
 export default router;

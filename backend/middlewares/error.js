@@ -2,39 +2,56 @@ class ErrorHandler extends Error {
   constructor(message, statusCode) {
     super(message);
     this.statusCode = statusCode;
+
+    Error.captureStackTrace(this, this.constructor);
   }
 }
 
 export const errorMiddleware = (err, req, res, next) => {
-  err.message = err.message || "Internal Server Error";
-  err.statusCode = err.statusCode || 500;
+  let error = { ...err };
+  error.message = err.message || "Internal Server Error";
+  error.statusCode = err.statusCode || 500;
 
+  /* ===============================
+     MongoDB Duplicate Key Error
+  =============================== */
   if (err.code === 11000) {
-    const message = `Duplicate ${Object.keys(err.keyValue)} Entered`,
-      err = new ErrorHandler(message, 400);
+    const message = `Duplicate ${Object.keys(err.keyValue).join(
+      ", "
+    )} entered`;
+    error = new ErrorHandler(message, 400);
   }
+
+  /* ===============================
+     JWT Errors
+  =============================== */
   if (err.name === "JsonWebTokenError") {
-    const message = `Json Web Token is invalid, Try again!`;
-    err = new ErrorHandler(message, 400);
+    error = new ErrorHandler("Invalid token, please login again!", 401);
   }
+
   if (err.name === "TokenExpiredError") {
-    const message = `Json Web Token is expired, Try again!`;
-    err = new ErrorHandler(message, 400);
+    error = new ErrorHandler("Token expired, please login again!", 401);
   }
+
+  /* ===============================
+     Mongoose Cast Error
+  =============================== */
   if (err.name === "CastError") {
-    const message = `Invalid ${err.path}`,
-      err = new ErrorHandler(message, 400);
+    const message = `Invalid ${err.path}`;
+    error = new ErrorHandler(message, 400);
   }
 
-  const errorMessage = err.errors
-    ? Object.values(err.errors)
-        .map((error) => error.message)
+  /* ===============================
+     Mongoose Validation Errors
+  =============================== */
+  const errorMessage = error.errors
+    ? Object.values(error.errors)
+        .map((err) => err.message)
         .join(" ")
-    : err.message;
+    : error.message;
 
-  return res.status(err.statusCode).json({
+  return res.status(error.statusCode).json({
     success: false,
-    // message: err.message,
     message: errorMessage,
   });
 };
